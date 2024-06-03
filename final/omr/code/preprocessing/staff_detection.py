@@ -35,6 +35,13 @@ def load_features(path):
         delimiter=',')
 
 def find_feature_staffs(features, staffs):
+    # Ensure staffs is a NumPy array
+    staffs = np.array(staffs)
+
+    # Check if staffs is 1D and reshape if necessary
+    if len(staffs.shape) == 1:
+        staffs = staffs.reshape(-1, 1)
+        
     matched_staffs = np.zeros(features.shape[0])
     for f in range(features.shape[0]):
         _, y, _, _ = features[f]

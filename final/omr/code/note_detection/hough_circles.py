@@ -11,8 +11,7 @@ threshold = 500
 # height: height of each notehead
 def hough_circle(height):
     # read image
-    processed_img = r'C:/Users/Chou/CODE/ml2/optical-music-recognition-master/optical-music-recognition-master/code/results/processed.png'
-    img = cv2.imread(processed_img, cv2.IMREAD_COLOR)
+    img = cv2.imread('../code/results/processed.png', cv2.IMREAD_COLOR)
 
     # convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)

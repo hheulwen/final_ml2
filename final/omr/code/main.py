@@ -15,25 +15,27 @@ from skimage import io, img_as_ubyte, img_as_float32, color, util
 
 # Imports from other files as needed
 from postprocessing.midi_conversion import create_midi
-from preprocessing.staff_detection import \
-    process_image, \
-    get_staff_lines, \
-    load_features, \
-    find_feature_staffs, \
-    find_pitches, \
-    find_staff_distance, \
-    construct_notes, \
-    construct_note, \
-    remove_single_line, \
-    remove_staff_lines, \
-    preprocess
-from postprocessing.image_operations import \
-    load_image, \
-    save_image, \
-    show_image, \
-    visualize_image, \
-    visualize_staff_lines, \
-    visualize_notes
+from preprocessing.staff_detection import (
+    process_image,
+    get_staff_lines,
+    load_features,
+    find_feature_staffs,
+    find_pitches,
+    find_staff_distance,
+    construct_notes,
+    construct_note,
+    remove_single_line,
+    remove_staff_lines,
+    preprocess,
+)
+from postprocessing.image_operations import (
+    load_image,
+    save_image,
+    show_image,
+    visualize_image,
+    visualize_staff_lines,
+    visualize_notes,
+)
 from preprocessing.staff_removal import staff_removal
 from note_detection.hough_circles import hough_circle, hough_circle_input
 from note_detection.contour import make_bounding_boxes
@@ -91,11 +93,11 @@ def command_line_args():
     parser = argparse.ArgumentParser(
         description='A program that creates a MIDI file from an image and extracted musical features!')
     parser.add_argument("--image-path",
-                        default='../data/fuzzy-wuzzy.png',
+                        default='../code/data/fuzzy-wuzzy.png',
                         type=str,
                         help="This is the path to your image!")
     parser.add_argument("--features-path",
-                        default='../data/fuzzy_wuzzy_features.csv',
+                        default='../code/data/fuzzy_wuzzy_features.csv',
                         type=str,
                         help="This is the path to your image's features!")
     parser.add_argument("--no-vis",
@@ -117,9 +119,14 @@ def command_line_args():
 def main():
     args = command_line_args()
 
-    output_path = r'C:/Users/Chou/CODE/ml2/optical-music-recognition-master/optical-music-recognition-master/code/results/processed.png'
+    output_path = '../final/omr/code/results/processed.png'
     # The current image to process
     sheet_img = cv2.imread(args.image_path, cv2.IMREAD_GRAYSCALE)
+    
+    if sheet_img is None:
+        print(f"Error: Unable to load image at {args.image_path}")
+        sys.exit(1)
+
     height, width = sheet_img.shape
     staff_lines_thicknesses, staff_lines = get_staff_lines(width, height, sheet_img)
 
@@ -133,7 +140,7 @@ def main():
     final_img = staff_removal(args.image_path, max(staff_lines_thicknesses) if staff_lines_thicknesses else 10)
 
     # Save the final processed image
-    if save_image(output_path, final_img):
+    if save_image('../code/results/processed.png', final_img):
         print("Staff removal completed successfully.")
     else:
         print("Staff removal failed.")
@@ -159,7 +166,7 @@ def main():
         plt.show()
 
     # DL Model Classification
-    dataset_path = r'C:/Users/Chou/CODE/ml2/optical-music-recognition-master/optical-music-recognition-master/code/deep_learning/dataset/class_names.csv'
+    dataset_path = '../code/deep_learning/dataset/class_names.csv'
     class_names = pd.read_csv(dataset_path, header=None)
 
     num_classes = len(class_names)
