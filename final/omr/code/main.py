@@ -8,28 +8,23 @@ import tensorflow as tf
 import sys
 import skimage
 import matplotlib
-matplotlib.use('TkAgg')  # Set the backend to TkAgg or another suitable one
+matplotlib.use('TkAgg')  
 from matplotlib import patches
 from matplotlib import pyplot as plt
 from skimage import io, img_as_ubyte, img_as_float32, color, util
 
-# Imports from other files as needed
+# imports from other files as needed
 from postprocessing.midi_conversion import create_midi
 from preprocessing.staff_detection import (
     process_image,
-    get_staff_lines,
     load_features,
+    detect_staff_lines,
     find_feature_staffs,
     find_pitches,
     find_staff_distance,
     construct_notes,
-    construct_note,
-    remove_single_line,
-    remove_staff_lines,
-    preprocess,
 )
 from postprocessing.image_operations import (
-    load_image,
     save_image,
     show_image,
     visualize_image,
@@ -37,7 +32,7 @@ from postprocessing.image_operations import (
     visualize_notes,
 )
 from preprocessing.staff_removal import staff_removal
-from note_detection.hough_circles import hough_circle, hough_circle_input
+from note_detection.hough_circles import hough_circle
 from note_detection.contour import make_bounding_boxes
 from deep_learning.model import NoteClassificationModel
 
@@ -93,13 +88,9 @@ def command_line_args():
     parser = argparse.ArgumentParser(
         description='A program that creates a MIDI file from an image and extracted musical features!')
     parser.add_argument("--image-path",
-                        default='../code/data/fuzzy-wuzzy.png',
+                        default='../code/data/jingle_bells.jpg',
                         type=str,
                         help="This is the path to your image!")
-    parser.add_argument("--features-path",
-                        default='../code/data/fuzzy_wuzzy_features.csv',
-                        type=str,
-                        help="This is the path to your image's features!")
     parser.add_argument("--no-vis",
                         action="store_true",
                         help="This is a variable representing whether to visualize results or not!")
@@ -120,33 +111,27 @@ def main():
     args = command_line_args()
 
     output_path = '../final/omr/code/results/processed.png'
-    # The current image to process
-    sheet_img = cv2.imread(args.image_path, cv2.IMREAD_GRAYSCALE)
-    
+    sheet_img = process_image(args.image_path)
+ 
     if sheet_img is None:
         print(f"Error: Unable to load image at {args.image_path}")
         sys.exit(1)
 
-    height, width = sheet_img.shape
-    staff_lines_thicknesses, staff_lines = get_staff_lines(width, height, sheet_img)
 
-    # A [# of features x 4] array holding all of the features for the image
-    truth_features = load_features(args.features_path)
+    staff_lines = detect_staff_lines(sheet_img)
+    staff_lines_thicknesses = find_staff_distance(staff_lines)
 
-    # Preprocess to remove staff lines
-    processed_img = preprocess(sheet_img)
+    # further process to remove remaining staff artifacts
+    final_img = staff_removal(args.image_path, min(staff_lines_thicknesses, 10))
 
-    # Further process to remove remaining staff artifacts
-    final_img = staff_removal(args.image_path, max(staff_lines_thicknesses) if staff_lines_thicknesses else 10)
-
-    # Save the final processed image
+    # save the final processed image
     if save_image('../code/results/processed.png', final_img):
         print("Staff removal completed successfully.")
     else:
         print("Staff removal failed.")
 
     # Hough Detection
-    detected_circles = hough_circle(int(max(staff_lines_thicknesses) if staff_lines_thicknesses else 10))
+    detected_circles = hough_circle(min(staff_lines_thicknesses, 10))
     features = circles_to_features(detected_circles)
 
     # Bounding Boxes
@@ -155,7 +140,6 @@ def main():
     
     print("Found bounding boxes.")
 
-    # Uncomment this if you want to look at your bounding boxes
     if not args.no_vis:
         fig, ax = plt.subplots(1)
         ax.imshow(sheet_img, cmap='gray_r')
@@ -191,13 +175,13 @@ def main():
     if not args.no_vis:
         visualize_image(sheet_img, as_gray=True)
         visualize_staff_lines(sheet_img, staff_lines)
-        visualize_notes(sheet_img, features, staff_lines, matched_staffs, pitches, max(staff_lines_thicknesses) if staff_lines_thicknesses else 10)
+        visualize_notes(sheet_img, features, staff_lines, matched_staffs, pitches, min(staff_lines_thicknesses, 10))
         show_image()
 
     notes = construct_notes(features, staff_lines, matched_staffs, pitches)
 
     path = Path(args.image_path).stem
     create_midi(path, notes)
-
+    print("Created midi file")
 if __name__ == "__main__":
     main()

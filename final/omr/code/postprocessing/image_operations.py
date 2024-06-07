@@ -34,9 +34,6 @@ def load_image(path, as_gray):
     else:
         return img_as_float32(io.imread(path))
 
-#def save_image(path, im):
- #   return io.imsave(path, img_as_ubyte(im.copy()))
-
 def save_image(path, img):
     try:
         io.imsave(path, img_as_ubyte(img))

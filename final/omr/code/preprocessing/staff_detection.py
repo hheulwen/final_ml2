@@ -35,14 +35,15 @@ def load_features(path):
         delimiter=',')
 
 def find_feature_staffs(features, staffs):
-    # Ensure staffs is a NumPy array
+    # ensure staffs is a NumPy array
     staffs = np.array(staffs)
 
-    # Check if staffs is 1D and reshape if necessary
+    # check if staffs is 1D and reshape if necessary
     if len(staffs.shape) == 1:
         staffs = staffs.reshape(-1, 1)
         
     matched_staffs = np.zeros(features.shape[0])
+
     for f in range(features.shape[0]):
         _, y, _, _ = features[f]
         y = float(y)
@@ -100,77 +101,3 @@ def construct_notes(features, staffs, matched_staffs, pitches):
         notes[num_notes:num_notes + sorted_notes_indices.shape[0]] = these_notes
         num_notes += sorted_notes_indices.shape[0]
     return notes
-
-def get_staff_lines(width, height, in_img, threshold=0.8):
-    initial_lines = []
-    row_histogram = [0] * height
-    staff_lines = []
-    staff_lines_thicknesses = []
-
-    for r in range(height):
-        for c in range(width):
-            if in_img[r][c] == 0:
-                row_histogram[r] += 1
-
-    for row in range(len(row_histogram)):
-        if row_histogram[row] >= (width * threshold):
-            initial_lines.append(row)
-
-    it = 0
-    cur_thickness = 1
-
-    while it < len(initial_lines):
-        if cur_thickness == 1:
-            staff_lines.append(initial_lines[it])
-
-        if it == int(len(initial_lines) - 1):
-            staff_lines_thicknesses.append(cur_thickness)
-        elif initial_lines[it] + 1 == initial_lines[it + 1]:
-            cur_thickness += 1
-        else:
-            staff_lines_thicknesses.append(cur_thickness)
-            cur_thickness = 1
-
-        it += 1
-
-    return staff_lines_thicknesses, staff_lines
-
-def remove_single_line(line_thickness, line_start, in_img, width):
-    line_end = line_start + line_thickness - 1
-
-    for col in range(width):
-        if in_img.item(line_start, col) == 0 or in_img.item(line_end, col) == 0:
-            if in_img.item(line_start - 1, col) == 255 and in_img.item(line_end + 1, col) == 255:
-                for j in range(line_thickness):
-                    in_img.itemset((line_start + j, col), 255)
-            elif in_img.item(line_start - 1, col) == 255 and in_img.item(line_end + 1, col) == 0:
-                if (col > 0 and in_img.item(line_end + 1, col - 1) != 0) and (col < width - 1 and in_img.item(line_end + 1, col + 1) != 0):
-                    thick = line_thickness + 1
-                    if thick < 1:
-                        thick = 1
-                    for j in range(int(thick)):
-                        in_img.itemset((line_start + j, col), 255)
-            elif in_img.item(line_start - 1, col) == 0 and in_img.item(line_end + 1, col) == 255:
-                if (col > 0 and in_img.item(line_start - 1, col - 1) != 0) and (col < width - 1 and in_img.item(line_start - 1, col + 1) != 0):
-                    thick = line_thickness + 1
-                    if thick < 1:
-                        thick = 1
-                    for j in range(int(thick)):
-                        in_img.itemset((line_end - j, col), 255)
-    return in_img
-
-def remove_staff_lines(in_img, width, staff_lines, staff_lines_thicknesses):
-    it = 0
-    while it < len(staff_lines):
-        line_start = staff_lines[it]
-        line_thickness = staff_lines_thicknesses[it]
-        in_img = remove_single_line(line_thickness, line_start, in_img, width)
-        it += 1
-    return in_img
-
-def preprocess(img):
-    height = img.shape[0]
-    width = img.shape[1]
-    staff_lines_thicknesses, staff_lines = get_staff_lines(width, height, img)
-    img = remove_staff_lines(img, width, staff_lines, staff_lines_thicknesses)
-    return img

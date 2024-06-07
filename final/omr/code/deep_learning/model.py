@@ -1,14 +1,9 @@
 import tensorflow as tf
-
 from tensorflow.keras.layers import \
     Conv2D, MaxPool2D, Dropout, Flatten, Dense
-
-#from preprocess import Dataset_Reader
-
 import argparse
 import pickle
 import numpy as np
-
 
 class NoteClassificationModel(tf.keras.Model):
 
@@ -21,11 +16,11 @@ class NoteClassificationModel(tf.keras.Model):
 
         self.batch_size = 160
 
-        self.epochs = 10  # no clue
+        self.epochs = 10  
         self.epsilon = 0.001
         self.dropout_rate = 0.5
 
-        # Follows implementation similar to deepscores model: conv, relu, maxpool, dropout
+        # follows implementation similar to deepscores model: conv, relu, maxpool, dropout
         self.architecture = [
             Conv2D(32, 11, 1, padding="same", activation="relu"),
             MaxPool2D(3, padding="same"),

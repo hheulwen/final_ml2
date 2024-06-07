@@ -23,6 +23,6 @@ def create_midi(path, notes):
 
         current_time += length
 
-    # Add the piano instrument to the PrettyMIDI object
+    # ddd the piano instrument to the PrettyMIDI object
     song.instruments.append(piano)
     song.write(path + '.mid')

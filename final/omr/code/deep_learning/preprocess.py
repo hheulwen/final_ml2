@@ -7,7 +7,6 @@ import skimage
 from skimage.filters import gaussian
 import cv2
 
-
 class Dataset_Reader():
 
     def __init__(self, path, split=0.2, min_number=2, one_hot=True):
@@ -64,7 +63,7 @@ class Dataset_Reader():
         self.images = self.images[train_indices]
         self.annotations = self.annotations[train_indices]
 
-        # Shuffle the data
+        # shuffle the data
         perm = np.arange(self.images.shape[0])
         np.random.seed(0)
         np.random.shuffle(perm)
@@ -73,7 +72,7 @@ class Dataset_Reader():
         print(self.images)
         print(self.annotations)
 
-        # Reshape to fit Tensorflow
+        # reshape to fit Tensorflow
         self.images = np.expand_dims(self.images, -1)
         self.test_images = np.expand_dims(self.test_images, -1)
 

@@ -8,8 +8,10 @@ def make_bounding_boxes(image):
 
     bilateral_filtered_image = cv2.bilateralFilter(raw_image, 5, 175, 175)
     edge_detected_image = cv2.Canny(bilateral_filtered_image, 75, 200)
-
-    # Use cv2.findContours and handle both return cases
+    cv2.imshow('Edge', edge_detected_image)
+    cv2.waitKey(0)
+    
+    # use cv2.findContours and handle both return cases
     contours, _ = cv2.findContours(edge_detected_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     bounding_boxes = []
@@ -19,10 +21,10 @@ def make_bounding_boxes(image):
         if np.size(boxed_img) > 0:
             bounding_boxes.append([x, y, w, h])
 
-    # Convert bounding_boxes to numpy array
+    # convert bounding_boxes to numpy array
     bounding_boxes = np.array(bounding_boxes)
 
-    # Group rectangles, if necessary
+    # group rectangles, if necessary
     if len(bounding_boxes) > 0:
         bounding_boxes, _ = cv2.groupRectangles(bounding_boxes.tolist(), 1, 0.9)
 

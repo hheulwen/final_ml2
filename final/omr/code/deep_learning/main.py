@@ -1,28 +1,62 @@
 import tensorflow as tf
-
-from tensorflow.keras.layers import \
-    Conv2D, MaxPool2D, Dropout, Flatten, Dense
-
+import matplotlib.pyplot as plt
+from tensorflow.keras.layers import Conv2D, MaxPool2D, Dropout, Flatten, Dense
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import seaborn as sns
 from preprocess import Dataset_Reader
 from model import NoteClassificationModel
-
 import argparse
 import pickle
 import numpy as np
+import os
 
+def visualize_data(datasets):
+    # visualize the distribution of the classes
+    plt.figure(figsize=(10, 6))
+    sns.countplot(x=datasets.annotations)
+    plt.title('Class Distribution')
+    plt.xlabel('Class')
+    plt.ylabel('Frequency')
+    plt.show()
+
+    # visualize some example images with their labels
+    fig, axes = plt.subplots(2, 5, figsize=(15, 6))
+    axes = axes.ravel()
+    for i in range(10):
+        axes[i].imshow(datasets.images[i], cmap='gray')
+        axes[i].set_title(f"Label: {datasets.annotations[i]}")
+        axes[i].axis('off')
+    plt.tight_layout()
+    plt.show()
+
+def plot_confusion_matrix(y_true, y_pred, class_names):
+    cm = confusion_matrix(y_true, y_pred)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
+    disp.plot(cmap=plt.cm.Blues)
+    plt.title('Confusion Matrix')
+    plt.show()
 
 def train(model, datasets):
+    # create the logs directory
+    log_dir = "./logs"
+    os.makedirs(log_dir, exist_ok=True)
+
+    # initialize Tensorboard callback with log_dir
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir)
+
     callback_list = [
         tf.keras.callbacks.ModelCheckpoint(
             filepath="./checkpoints/" +
             "weights.e{epoch:02d}-" +
-            "acc{val_sparse_categorical_accuracy:.4f}.h5",
+            "acc{val_sparse_categorical_accuracy:.4f}.weights.h5",
             monitor='val_sparse_categorical_accuracy',
             save_best_only=True,
-            save_weights_only=True)
+            save_weights_only=True),
+            tf.keras.callbacks.CSVLogger('training_log.csv'),
+            tensorboard_callback
     ]
 
-    model.fit(
+    history = model.fit(
         x=np.array(datasets.images),
         y=datasets.annotations,
         validation_data=(np.array(datasets.test_images),
@@ -33,6 +67,27 @@ def train(model, datasets):
         shuffle=True
     )
 
+    # plot training history
+    plt.plot(history.history['sparse_categorical_accuracy'])
+    plt.plot(history.history['val_sparse_categorical_accuracy'])
+    plt.title('Model Accuracy')
+    plt.ylabel('Accuracy')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Validation'], loc='upper left')
+    plt.show()
+
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('Model Loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Validation'], loc='upper left')
+    plt.show()
+
+    # predict and plot confusion matrix
+    y_pred = model.predict(np.array(datasets.test_images))
+    y_pred_classes = np.argmax(y_pred, axis=1)
+    plot_confusion_matrix(datasets.test_annotations, y_pred_classes, datasets.class_names)
 
 def test(model, datasets):
     model.evaluate(
@@ -40,7 +95,6 @@ def test(model, datasets):
         y=datasets.test_annotations,
         verbose=1,
     )
-
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -73,12 +127,8 @@ def main():
         print("Reading new data")
         data_reader.read_images()
         print("Saving new data")
-        # with open('dataset.pkl', 'wb') as output:
-        #     pickle.dump(data_reader, output, pickle.HIGHEST_PROTOCOL)
     else:
         print("Loading old data")
-        # with open('dataset.pkl', 'rb') as input:
-        #     data_reader = pickle.load(input)
 
     print("Shape of images")
     print(data_reader.images.shape)
@@ -89,8 +139,9 @@ def main():
     print("Entry of annotations")
     print(data_reader.annotations[0])
 
+    visualize_data(data_reader)
+
     model = NoteClassificationModel(data_reader.nr_classes)
-    # model = NoteClassificationModel_Vgg4(data_reader.nr_classes)
     model(tf.keras.Input(
         shape=(data_reader.tile_size[0], data_reader.tile_size[1], 1)))
     model.summary()
@@ -111,7 +162,6 @@ def main():
     else:
         print("Start training")
         train(model, data_reader)
-
 
 ARGS = parse_args()
 main()
