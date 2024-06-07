@@ -88,7 +88,7 @@ def command_line_args():
     parser = argparse.ArgumentParser(
         description='A program that creates a MIDI file from an image and extracted musical features!')
     parser.add_argument("--image-path",
-                        default='../code/data/jingle_bells.jpg',
+                        default='../code/data/fuzzy-wuzzy.png',
                         type=str,
                         help="This is the path to your image!")
     parser.add_argument("--no-vis",
